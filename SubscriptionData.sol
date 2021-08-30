@@ -12,35 +12,53 @@ import './libraries/Constants.sol';
 
 contract SubscriptionData is IData, IndexResolver {
 
-    address _addrRoot;
-    address _addrOwner;
+    address public _addrRoot;
+    address public _addrOwner;
 
-    uint64 _value;
-    uint32 _period;
+    uint64 public _value;
+    uint32 public _period;
 
-    uint256 _executeCount;
-    uint32 _startTime;
-    uint8 _status;
+    uint public _executeCount;
+    uint32 public _startTime;
+    uint8 public _status;
 
     uint256 static _id;
 
-    constructor(TvmCell codeIndex, uint64 value, uint32 period) public {
+    constructor(address addrOwner, TvmCell codeIndex, uint64 value, uint32 period, uint32 startTime) public {
         optional(TvmCell) optSalt = tvm.codeSalt(tvm.code());
         require(optSalt.hasValue(), 101);
         (address addrRoot) = optSalt.get().toSlice().decode(address);
+        require(msg.sender == addrRoot);
         require(msg.value >= Constants.MIN_FOR_DEPLOY);
         tvm.accept();
         _addrRoot = addrRoot;
-        _addrOwner = msg.sender;
+        _addrOwner = addrOwner;
         _codeIndex = codeIndex;
 
         _value = value;
         _period = period;
-        _startTime = uint32(now);
+        _startTime = startTime;
         _status = Constants.STATUS_ACTIVE;
         _executeCount = 0;
 
-        deployIndex(msg.sender);
+        deployIndex(addrOwner);
+    }
+
+    function confirmExecute() external {
+        require(msg.sender == _addrOwner, 110);
+        _executeCount++;
+        msg.sender.transfer({value: 0, flag: 64});
+    }
+
+    function cancelSubscription() external {
+        require(msg.sender == _addrOwner);
+
+        address indexOwner = resolveIndex(_addrRoot, address(this), _addrOwner);
+        IIndex(indexOwner).destruct();
+        address indexOwnerRoot = resolveIndex(address(0), address(this), _addrOwner);
+        IIndex(indexOwnerRoot).destruct();
+
+        selfdestruct(_addrOwner);
     }
 
     function deployIndex(address owner) private {
