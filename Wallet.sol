@@ -8,6 +8,7 @@ pragma AbiHeader time;
 
 import './MultisigWallet.sol';
 import './libraries/Constants.sol';
+import './interfaces/IWallet.sol';
 
 interface ISubscriptionManager {
     function subscribe() external responsible returns (address, address, address, uint64, uint32, uint32);
@@ -19,29 +20,20 @@ interface ISubscriptionData {
 }
 
 
-contract Wallet is MultisigWallet {
+contract Wallet is MultisigWallet, IWallet {
 
     mapping (address => Payment) public _subscriptions;
 
     mapping (address => bool) public _allowedServices;
 
-    struct Payment {
-        address ownerService;
-        address addrSubscription;
-        uint64 value;
-        uint32 period;
-        uint32 startTime;
-        uint8 status;
-        uint executeCount;
-    }
-
-    function subscribe(address addrSubscriptionManager) public checkOwnerAndAccept {
+    function subscribe(address addrSubscriptionManager) public override checkOwnerAndAccept {
+        require(_subscriptions.exists(addrSubscriptionManager) == false, 108);
         _allowedServices[addrSubscriptionManager] = true;
 
-        ISubscriptionManager(addrSubscriptionManager).subscribe{value: 1.5 ton, flag: 1, callback: Wallet.addSubscription}();
+        ISubscriptionManager(addrSubscriptionManager).subscribe{value: 1.7 ton, flag: 1, callback: Wallet.addSubscription}();
     }
 
-    function cancelSubscription(address addrSubscriptionManager) public checkOwnerAndAccept {
+    function cancelSubscription(address addrSubscriptionManager) public override checkOwnerAndAccept {
         require(_subscriptions.exists(addrSubscriptionManager) == true, 107);
 
         ISubscriptionData(_subscriptions[addrSubscriptionManager].addrSubscription).cancelSubscription{value: 1 ton}();
@@ -77,12 +69,19 @@ contract Wallet is MultisigWallet {
                  ( uint32(subscription.executeCount * subscription.period) + subscription.startTime ) <= uint32(now)
              ) {
                 subscription.ownerService.transfer(subscription.value);
-                subscription.executeCount = subscription.executeCount + 1;
+                subscription.executeCount++;
+                _subscriptions[msg.sender] = subscription;
                 ISubscriptionData(subscription.addrSubscription).confirmExecute{value: 1 ton}();
              }
 
         }
 
+    }
+
+    function getInfoSubscription(address addrSubscriptionManager) public view override returns (Payment info) {
+        require(_subscriptions.exists(addrSubscriptionManager) == true, 109);
+
+        info = _subscriptions[addrSubscriptionManager];
     }
 
 }

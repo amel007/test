@@ -38,7 +38,7 @@ contract SubscriptionManager is DataResolver, IndexResolver {
 
         _totalSubscriptions++;
 
-        return{value: 0, flag: 64} (addrSubscription, address(this), _ownerService, _value, _period, startTime);
+        return{value: (msg.value - 1.2 ton)} (addrSubscription, address(this), _ownerService, _value, _period, startTime);
     }
 
     // only ownerWallet

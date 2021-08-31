@@ -61,6 +61,26 @@ contract SubscriptionData is IData, IndexResolver {
         selfdestruct(_addrOwner);
     }
 
+    function getTimeEndPeriod() private view returns (uint32) {
+        return (uint32(_executeCount * _period) + _startTime);
+    }
+
+    function isExecutedStatus() public view returns (bool isExecuted, uint32 endTime) {
+        isExecuted = false;
+        endTime = getTimeEndPeriod();
+        if (_status == Constants.STATUS_ACTIVE && endTime > uint32(now)) {
+            isExecuted = true;
+        }
+    }
+
+    function isAllowExecute() public view returns (bool isAllow, uint32 allowedTimeExecute) {
+        isAllow = false;
+        allowedTimeExecute = getTimeEndPeriod();
+        if (_status == Constants.STATUS_ACTIVE && allowedTimeExecute <= uint32(now)) {
+            isAllow = true;
+        }
+    }
+
     function deployIndex(address owner) private {
         TvmCell codeIndexOwner = _buildIndexCode(_addrRoot, owner);
         TvmCell stateIndexOwner = _buildIndexState(codeIndexOwner, address(this));
