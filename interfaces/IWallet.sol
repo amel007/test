@@ -15,4 +15,5 @@ interface IWallet {
     function subscribe(address addrSubscriptionManager) external;
     function cancelSubscription(address addrSubscriptionManager) external;
     function getInfoSubscription(address addrSubscriptionManager) external view returns (Payment info);
+    function getSubscriptions() external view returns (mapping(address => Payment) subscriptions);
 }

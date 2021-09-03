@@ -28,6 +28,8 @@ contract Wallet is MultisigWallet, IWallet {
 
     function subscribe(address addrSubscriptionManager) public override checkOwnerAndAccept {
         require(_subscriptions.exists(addrSubscriptionManager) == false, 108);
+        require(_allowedServices.exists(addrSubscriptionManager) == false, 109);
+
         _allowedServices[addrSubscriptionManager] = true;
 
         ISubscriptionManager(addrSubscriptionManager).subscribe{value: 1.7 ton, flag: 1, callback: Wallet.addSubscription}();
@@ -38,7 +40,6 @@ contract Wallet is MultisigWallet, IWallet {
 
         ISubscriptionData(_subscriptions[addrSubscriptionManager].addrSubscription).cancelSubscription{value: 1 ton}();
         delete _subscriptions[addrSubscriptionManager];
-        delete _allowedServices[addrSubscriptionManager];
     }
 
     function addSubscription (
@@ -53,6 +54,7 @@ contract Wallet is MultisigWallet, IWallet {
         require(_subscriptions.exists(addrSubscriptionManager) == false, 105);
 
         _subscriptions[addrSubscriptionManager] = Payment(ownerService, addrSubscription, value, period, startTime, Constants.STATUS_ACTIVE, 0);
+        delete _allowedServices[addrSubscriptionManager];
     }
 
     function executeSubscription () external {
@@ -84,4 +86,7 @@ contract Wallet is MultisigWallet, IWallet {
         info = _subscriptions[addrSubscriptionManager];
     }
 
+    function getSubscriptions() public view override returns (mapping(address => Payment) subscriptions) {
+        subscriptions = _subscriptions;
+    }
 }
