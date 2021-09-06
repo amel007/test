@@ -174,12 +174,13 @@ contract SubscriptionDebot is Debot, Utility {
         IWallet(m_wallet).subscribe{
             abiVer: 2,
             sign: true,
+            extMsg: true,
             pubkey: pubkey,
             time: uint64(now),
             expire: 0,
             callbackId: tvm.functionId(onSubscribeSuccess),
             onErrorId: tvm.functionId(onError)
-        }(_addrManagerChoose).extMsg;
+        }(_addrManagerChoose);
     }
 
     function onSubscribeSuccess() public {
@@ -188,9 +189,8 @@ contract SubscriptionDebot is Debot, Utility {
     }
 
     function showMySubscriptionsMenu() public {
-        for (uint i = 0; i < _arraySubscriptions.length; i++) {
-            delete _arraySubscriptions[i];
-        }
+        address[] newArray;
+        _arraySubscriptions = newArray;
 
         MenuItem[] items;
         optional(address, Payment) mapSubscriptions = _subscriptions.min();
@@ -234,12 +234,13 @@ contract SubscriptionDebot is Debot, Utility {
         IWallet(m_wallet).cancelSubscription{
             abiVer: 2,
             sign: true,
+            extMsg: true,
             pubkey: pubkey,
             time: uint64(now),
             expire: 0,
             callbackId: tvm.functionId(onCancelSubscriptionSuccess),
             onErrorId: tvm.functionId(onError)
-        }(_addrManagerChoose).extMsg;
+        }(_addrManagerChoose);
     }
 
     function onCancelSubscriptionSuccess() public {
@@ -257,12 +258,13 @@ contract SubscriptionDebot is Debot, Utility {
         IWallet(m_wallet).getSubscriptions{
             abiVer: 2,
             sign: false,
+            extMsg: true,
             pubkey: none,
             time: uint64(now),
             expire: 0,
             callbackId: answerId,
             onErrorId: 0
-        }().extMsg;
+        }();
     }
 
     /// @notice Returns Metadata about DeBot.
