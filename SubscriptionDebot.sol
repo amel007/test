@@ -58,6 +58,10 @@ contract SubscriptionDebot is Debot, Utility {
 
     /// @notice Entry point function for DeBot.
     function start() public override {
+        chooseWallet(0);
+    }
+
+    function chooseWallet(uint32 index) public {
         AddressInput.get(tvm.functionId(startChecks), "Which wallet do you want to work with?");
     }
 
@@ -107,13 +111,14 @@ contract SubscriptionDebot is Debot, Utility {
         string str = format("This wallet has {} tokens on the balance.", tonsToStr(nanotokens));
         Terminal.print(0, str);
 
-        mainMenu();
+        mainMenu(0);
     }
 
-    function mainMenu() public {
+    function mainMenu(uint32 index) public {
         Menu.select("What's next?", "=)", [
             MenuItem("show my subscriptions", "", tvm.functionId(showMySubscriptions)),
-            MenuItem("show all services", "", tvm.functionId(showAllServices))
+            MenuItem("show all services", "", tvm.functionId(showAllServices)),
+            MenuItem("change wallet", "", tvm.functionId(chooseWallet))
         ]);
     }
 
@@ -139,15 +144,15 @@ contract SubscriptionDebot is Debot, Utility {
 
     function beforeShowMySubscriptionsMenu(mapping(address => Payment) subscriptions) public {
         _subscriptions = subscriptions;
-        showMySubscriptionsMenu();
+        showMySubscriptionsMenu(0);
     }
 
     function beforeShowAllServicesMenu(mapping(address => Payment) subscriptions) public {
         _subscriptions = subscriptions;
-        showAllServicesMenu();
+        showAllServicesMenu(0);
     }
 
-    function showAllServicesMenu() public {
+    function showAllServicesMenu(uint32 index) public {
 
         Menu.select("Choose service:", "", [
             MenuItem(format("Service address:\n {}", _addrServiceTest), "", tvm.functionId(chooseServiceMenu)),
@@ -168,7 +173,7 @@ contract SubscriptionDebot is Debot, Utility {
         Menu.select("Actions:", "", items);
     }
 
-    function subscribe() public {
+    function subscribe(uint32 index) public {
 
         optional(uint256) pubkey = 0;
         IWallet(m_wallet).subscribe{
@@ -185,10 +190,10 @@ contract SubscriptionDebot is Debot, Utility {
 
     function onSubscribeSuccess() public {
         Terminal.print(0, "Success! Request of subscription was sent!");
-        mainMenu();
+        mainMenu(0);
     }
 
-    function showMySubscriptionsMenu() public {
+    function showMySubscriptionsMenu(uint32 index) public {
         address[] newArray;
         _arraySubscriptions = newArray;
 
@@ -228,7 +233,7 @@ contract SubscriptionDebot is Debot, Utility {
         ]);
     }
 
-    function cancelSubscription() public {
+    function cancelSubscription(uint32 index) public {
 
         optional(uint256) pubkey = 0;
         IWallet(m_wallet).cancelSubscription{
@@ -245,12 +250,12 @@ contract SubscriptionDebot is Debot, Utility {
 
     function onCancelSubscriptionSuccess() public {
         Terminal.print(0, "Success! Subscription was canceled!");
-        mainMenu();
+        mainMenu(0);
     }
 
     function onError(uint32 sdkError, uint32 exitCode) public {
         Terminal.print(0, format("Oooops! Action failed! sdkError: {:x}, exitCode {:x}", sdkError, exitCode));
-        mainMenu();
+        mainMenu(0);
     }
 
     function _getSubscriptions(uint32 answerId) private view {
@@ -285,6 +290,6 @@ contract SubscriptionDebot is Debot, Utility {
     }
 
     function getRequiredInterfaces() public view override returns (uint256[] interfaces) {
-        return [Menu.ID, Terminal.ID];
+        return [Menu.ID, Terminal.ID, AddressInput.ID];
     }
 }
